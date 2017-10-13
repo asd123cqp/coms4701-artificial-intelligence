@@ -1,0 +1,110 @@
+# Summer 2017 COMS 4771 AI Homework 4
+
+File: `hw_sudoku_qc2201.txt`
+
+Name: Qipeng Chen
+
+UNI:  qc2201
+
+
+## Description
+
+Files contain:
+
+1. `hw_sudoku_qc2201.txt`
+
+	This file. The write-up for this assignment.
+
+2. `driver.py`
+
+	As requested by the `Introduction`, you can use `python driver.py <input_string>` to solve the input puzzle. By default, the driver will attempt a backtracking search. The result will be written to `./output.txt`.
+
+	In addition, you can add a third argument, `ac3` or `hybrid`, to force the driver to try to solve the puzzle using AC-3 (which usually fails) or backtracking preceded with AC-3. The result will also be written to `./output.txt`.
+
+3. `sudoku.py`
+
+	The main `Sodoku` class file.
+
+	The `Sodoku` class contains fields to represent the game state (e.g. board state and domains) and methods to manipulate the state (e.g. set the value/domain for a cell). Most importantly, it implements AC-3 algorithm `ac3_solver()` and backtracking search `bt_solver()`.
+
+4. `helper.py`
+
+	Helper functions to speedup arc generating.
+
+5. `test.py`
+
+	The test driver to run the `Sodoku` solver against the provided test cases.
+
+	By running `python test.py`, it loads `sudokus_start.txt` & `sudokus_finish.txt` as puzzle & solution. It will first run AC-3 solver, and the backtracking search. After running through all test cases for a given solver, it prints out which & how many puzzles are solved by this solver, and averagely how much time it takes to solve a puzzle.
+
+
+## AC-3 Algorithm
+
+As expected, the AC-3 solver performs poorly and can only complete 3/400 puzzles (1st, 2nd and 332nd).
+
+Implementation details: too strait forward and not much to say...
+
+Here's the related output produced by `python test.py`:
+
+```
+Puzzles solved by AC3: [1, 2, 332].
+Total solved by AC3: 3.
+Average runtime/puzzle: 0.0085846575.
+```
+
+
+## Backtracking Algorithm
+
+The backtracking search solver solves all 400/400 puzzles in `sudokus_start.txt`.
+
+Implementation details:
+
+- MRV
+
+	The minimum remaining value functionality is implemented as a priority queue `self.rv` and deeply integrated as a part of the `Sudoku` class. It is supported by all other methods like `set_val()` or `set_dom()` so that whenever you change the value or domain of a variable, its remaining value will also be updated. Thus, one can get the variable with MRV by simply calling `heappop()` on `self.rv`.
+
+- Forward Checking
+
+	Forward checking is implemented as a private method `__fwd_checking__()`.
+
+### Backtracking alone
+
+Here's the related output produced by `python test.py` using **backtracking alone**:
+
+```
+Puzzles solved by BT: [1, 2, **MANUALLY DELETED**, 399, 400].
+Total solved by BT: 400.
+Average runtime/puzzle: 0.01882856.
+
+```
+
+### Backtracking preceded with AC-3
+
+Here's the related output produced by `python test.py` using **backtracking preceded with AC-3**:
+
+```
+Puzzles solved by BT: [1, 2, **MANUALLY DELETED**, 399, 400].
+Total solved by Hybrid: 400.
+Average runtime/puzzle: 0.0253807025.
+```
+
+
+## Conclusion on Backtracking Algorithm & AC-3
+
+At first it's a little bit surprise to me that that backtracking search alone (without preceded with AC-3) is faster, since AC-3 may help reducing the domain space and thus speedup the backtracking. So I run test on only the puzzles that can be solved by AC-3. Here's the related output produced by `python test.py`:
+
+```
+Puzzles solved by AC3: [1, 2, 3].
+Total solved by AC3: 3.
+Average runtime/puzzle: 0.00710466666667.
+
+Puzzles solved by BT: [1, 2, 3].
+Total solved by BT: 3.
+Average runtime/puzzle: 0.001135.
+
+Puzzles solved by Hybrid: [1, 2, 3].
+Total solved by Hybrid: 3.
+Average runtime/puzzle: 0.00832166666667.
+```
+
+After a lot of testing, I realize that a lot of garbage domains are already eliminated at initialization. Thus, AC-3 offers little helps on reducing the domain space for solving hard puzzles. For example, for the "hardest Sudoku", running AC-3 only reduce "total possible values for all unassigned variables" by 2 (254 -> 252). In such cases, forward checking is much more efficient than AC-3 as looking many steps ahead is not that useful. Since BTS alone is already faster than AC-3 on AC-3-solvable puzzles after some simple preprocessing, it make sense that BTS alone is faster than AC-3 + BTS.
